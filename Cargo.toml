@@ -1,0 +1,23 @@
+[package]
+name = "gantt_chart"
+version = "0.1.0"
+edition = "2021"
+authors = ["John Lyon-Smith <john@lyon-smith.org>"]
+readme = "README.md"
+description = "A tool generating Gantt charts"
+repository = "https://github.com/jlyonsmith/gantt_chart"
+keywords = ["gantt", "chart", "project", "graphics", "cairo"]
+categories = ["command-line-utilities"]
+license = "Unlicense"
+
+[dependencies]
+chrono = { version = "0.4.22", features = ["serde"] }
+clap = { version = "4.0.7", features = ["derive"] }
+colored = "2.0.0"
+json5 = "0.4.1"
+serde = { version = "1.0.145", features = ["derive"] }
+skia-safe = "0.55.0"
+
+[[bin]]
+name = "gantt_chart"
+path = "src/bin/gantt_chart.rs"

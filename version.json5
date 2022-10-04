@@ -1,0 +1,41 @@
+{
+  vars: {
+    major: 1,
+    minor: 0,
+    patch: 0,
+    build: 20220319,
+    revision: 0,
+    tz: "America/Los_Angeles",
+  },
+  calcVars: {
+    nextBuild: "now::year * 10000 + now::month * 100 + now::day",
+  },
+  operations: {
+    incrMajor: "major += 1; minor = 0; patch = 0; revision = 0; build = nextBuild",
+    incrMinor: "minor += 1; patch = 0; revision = 0; build = nextBuild",
+    incrPatch: "patch += 1; revision = 0; build = nextBuild",
+    incrRevision: "revision += 1; build = nextBuild",
+  },
+  targets: [
+    {
+      description: "Cargo Package",
+      files: ["Cargo.toml"],
+      updates: [
+        {
+          search: '^(?P<begin>version\\s*=\\s*")\\d+\\.\\d+\\.\\d+(?P<end>"\\s*)$',
+          replace: 'begin + str::from(major) + "." + str::from(minor) + "." + str::from(patch) + end',
+        },
+      ],
+    },
+    {
+      description: "Git Tag Name",
+      files: ["scratch/version.tag.txt"],
+      write: 'str::from(major) + "." + str::from(minor) + "." + str::from(patch)',
+    },
+    {
+      description: "Git Tag Description",
+      files: ["scratch/version.desc.txt"],
+      write: '"Version " + str::from(major) + "." + str::from(minor) + "." + str::from(patch) + "+" + str::from(build) + "." + str::from(revision)',
+    },
+  ],
+}
