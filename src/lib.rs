@@ -180,8 +180,7 @@ impl<'a> GanttChartTool<'a> {
         let font = Font::from_typeface(&Typeface::default(), 18.0);
         let text_blob = TextBlob::from_str(text, &font).unwrap();
 
-        let (text_scalar, text_rect) =
-            font.measure_text(text.as_bytes(), TextEncoding::UTF8, Some(&paint2));
+        let (text_scalar, text_rect) = font.measure_str(text, Some(&paint2));
 
         output!(
             self.log,
