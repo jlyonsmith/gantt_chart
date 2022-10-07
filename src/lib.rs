@@ -1,29 +1,23 @@
 /// Generate a Gantt chart
-use chrono::{Duration, NaiveDate};
+use chrono::{Datelike, Duration, NaiveDate};
 use clap::Parser;
 use core::fmt::Arguments;
 use serde::Deserialize;
 use skia_safe::{
-    paint, BlendMode, Color, EncodedImageFormat, Font, Paint, Path, RRect, Rect, Surface, TextBlob,
-    TextEncoding, Typeface,
+    paint, BlendMode, ClipOp, Color, EncodedImageFormat, Font, Paint, Path, Rect, Surface,
+    TextBlob, Typeface,
 };
 use std::error::Error;
 use std::fs;
 use std::io::Write;
-use std::ops::Add;
 use std::path::PathBuf;
 
 mod log_macros;
 
-pub(crate) mod resources {
-    use skia_safe::{Data, Image};
-
-    pub fn color_wheel() -> Image {
-        let bytes = include_bytes!("resources/color_wheel.png");
-        let data = Data::new_copy(bytes);
-        Image::from_encoded(data).unwrap()
-    }
-}
+static MONTH_NAMES: [&str; 12] = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+static MEASURED_TEXT: &str = "XgbQ";
 
 #[derive(Parser)]
 #[clap(version, about, long_about = None)]
@@ -54,13 +48,15 @@ pub struct ItemData {
     start_date: Option<NaiveDate>,
     #[serde(rename = "resource")]
     resource_index: Option<usize>,
+    #[serde(skip)]
+    end_date: Option<NaiveDate>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ResourceData {
     title: String,
     #[serde(rename = "color")]
-    color_hex: String,
+    color_hex: u32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -79,19 +75,27 @@ struct RenderData {
     line_color2: u32,
     chart_margin: f32,
     header_height: f32,
-    item_height: f32,
-    item_width: f32,
+    item_font_size: f32,
+    item_font_height: (f32, f32),
+    item_padding: f32,
+    item_max_width: f32,
     item_title_width: f32,
-    month_names: Vec<String>,
-    colors: Vec<u32>,
+    colors: Vec<Color>,
+    cols: Vec<ColumnRenderData>,
     rows: Vec<RowRenderData>,
 }
 
 struct RowRenderData {
+    title: String,
     color_index: usize,
-    /// End offset.  If not present then this is a milestone
-    end_offset: Option<f32>,
     start_offset: f32,
+    /// End offset.  If not present then this is a milestone
+    length: Option<f32>,
+}
+
+struct ColumnRenderData {
+    width: f32,
+    name_index: usize,
 }
 
 impl<'a> GanttChartTool<'a> {
@@ -142,6 +146,30 @@ impl<'a> GanttChartTool<'a> {
         self: &Self,
         chart_data: &ChartData,
     ) -> Result<RenderData, Box<dyn Error>> {
+        fn num_days_in_month(year: i32, month: u32) -> u32 {
+            // the first day of the next month...
+            let (y, m) = if month == 12 {
+                (year + 1, 1)
+            } else {
+                (year, month + 1)
+            };
+            let d = NaiveDate::from_ymd(y, m, 1);
+
+            // ...is preceded by the last day of the original month
+            d.pred().day()
+        }
+
+        fn measure_text_height(text: &str, size: f32) -> (f32, f32) {
+            let paint = &mut Paint::default();
+
+            paint.set_style(paint::Style::Fill).set_color(Color::BLACK);
+
+            let font = Font::from_typeface(&Typeface::default(), size);
+            let (_, rect) = font.measure_str(text, Some(&paint));
+
+            (-rect.top, rect.bottom)
+        }
+
         // TODO: Fail if only one task
 
         let mut rd = RenderData {
@@ -153,26 +181,38 @@ impl<'a> GanttChartTool<'a> {
             line_thickness2: 2.0,
             line_color2: 0xffdddddd,
             chart_margin: 10.0,
-            item_height: 30.0,
-            item_width: 70.0,
+            item_padding: 6.0,
+            item_font_size: 18.0,
+            item_font_height: (0.0, 0.0),
+            item_max_width: 70.0,
             item_title_width: 210.0,
-            month_names: vec![],
-            colors: vec![],
+            colors: chart_data
+                .resources
+                .iter()
+                .map(|r| Color::new(r.color_hex))
+                .collect(),
+            cols: vec![],
             rows: vec![],
         };
+
+        rd.height = rd.header_height + rd.chart_margin * 2.0;
+        rd.width = rd.item_title_width + rd.chart_margin * 2.0;
+
+        rd.item_font_height = measure_text_height(MEASURED_TEXT, rd.item_font_size);
+
         let mut start_date = NaiveDate::MAX;
         let mut end_date = NaiveDate::MIN;
         let mut date = NaiveDate::MIN;
         let mut color_index: usize = 0;
 
-        // TODO: For each item we need a start & end date which excludes weekends
+        // Determine the project start & end dates
 
         for (i, item) in chart_data.items.iter().enumerate() {
             if let Some(item_start_date) = item.start_date {
                 date = item_start_date;
 
                 if item_start_date < start_date {
-                    // TODO: Ensure the date is not on a weekend
+                    // TODO: Ensure the start date is not on a weekend
                     start_date = date;
                 }
             } else if i == 0 {
@@ -180,7 +220,8 @@ impl<'a> GanttChartTool<'a> {
             }
 
             if let Some(item_days) = item.duration {
-                // TODO: Be smarter about adding days and skip weekends
+                // TODO: Be smarter about adding days and skip the weekends
+                // TODO: Keep a shadow list of the _real_ duration including weekends
                 date += Duration::days(item_days);
             }
 
@@ -189,42 +230,93 @@ impl<'a> GanttChartTool<'a> {
             }
 
             if let Some(item_resource_index) = item.resource_index {
+                // TODO: Ensure the index is in range
                 color_index = item_resource_index;
             } else if i == 0 {
-                return Err(From::from(format!("First item must contain a start date")));
+                return Err(From::from(format!(
+                    "First item must contain a resource index"
+                )));
+            }
+        }
+
+        start_date = NaiveDate::from_ymd(start_date.year(), start_date.month(), 1);
+        end_date = NaiveDate::from_ymd(
+            end_date.year(),
+            end_date.month(),
+            num_days_in_month(end_date.year(), end_date.month()),
+        );
+
+        // Create all the column data
+        let mut all_items_width: f32 = 0.0;
+        let mut num_item_days: u32 = 0;
+
+        date = start_date;
+
+        while date <= end_date {
+            let item_days = num_days_in_month(date.year(), date.month());
+            let item_width = rd.item_max_width * (item_days as f32) / 31.0;
+
+            num_item_days += item_days;
+            all_items_width += item_width;
+
+            // println!("item_width={}", item_width);
+            println!("item_days={}", item_days);
+
+            rd.cols.push(ColumnRenderData {
+                width: item_width,
+                name_index: (date.month() - 1) as usize,
+            });
+
+            date = NaiveDate::from_ymd(date.year(), date.month() % 12 + 1, 1);
+        }
+
+        rd.width += all_items_width;
+
+        println!("num_item_days={}", num_item_days);
+        // println!("all_items_width={}", all_items_width);
+        // println!("width={}", rd.width);
+        // println!(
+        //     "item_title_width={}, {}",
+        //     rd.width - rd.chart_margin * 2.0 - all_items_width,
+        //     rd.item_title_width
+        // );
+        // println!("num_item_days={}", num_item_days);
+        // println!("start_date={}", start_date);
+
+        date = start_date;
+        color_index = 0;
+
+        for item in chart_data.items.iter() {
+            if let Some(item_start_date) = item.start_date {
+                date = item_start_date;
             }
 
+            let start_offset = rd.item_title_width
+                + rd.chart_margin
+                + ((date - start_date).num_days() as f32) / (num_item_days as f32)
+                    * all_items_width;
+
+            let mut length: Option<f32> = None;
+
+            // println!("{}, days={}", (date - start_date).num_days(), date);
+
+            if let Some(item_days) = item.duration {
+                // TODO: Use the shadow duration not the actual duration
+                date += Duration::days(item_days);
+                length = Some((item_days as f32) / (num_item_days as f32) * all_items_width);
+            }
+
+            if let Some(item_resource_index) = item.resource_index {
+                color_index = item_resource_index;
+            }
+
+            rd.height += rd.item_font_height.0 + rd.item_padding * 2.0;
             rd.rows.push(RowRenderData {
+                title: item.title.clone(),
                 color_index,
-                start_offset: 0.0,
-                end_offset: None,
+                start_offset,
+                length,
             });
-        }
-
-        let date = start_date;
-
-        // TODO: Iterate from start to end dates getting month names
-        // TODO: Grab the number of days in each month
-        for _ in 1..=12 {
-            rd.month_names.push(date.format("%b").to_string());
-        }
-
-        // TODO: Naively go through each task and generate the start and end offset (ignoring weekends)
-
-        // TODO: Generate the array of colors
-
-        rd.height = rd.header_height + rd.chart_margin * 2.0;
-        rd.width = rd.item_title_width
-            + (rd.month_names.len() as f32) * rd.item_width
-            + rd.chart_margin * 2.0;
-
-        for _ in chart_data.items.iter() {
-            rd.rows.push(RowRenderData {
-                color_index: 0,
-                end_offset: Some(0.0),
-                start_offset: 0.0,
-            });
-            rd.height += rd.item_height;
         }
 
         Ok(rd)
@@ -235,6 +327,8 @@ impl<'a> GanttChartTool<'a> {
         surface: &mut Surface,
         rd: &RenderData,
     ) -> Result<(), Box<dyn Error>> {
+        const BAR_RADIUS: f32 = 3.0;
+
         let canvas = surface.canvas();
 
         canvas.draw_color(Color::WHITE, BlendMode::default());
@@ -251,17 +345,52 @@ impl<'a> GanttChartTool<'a> {
             .set_stroke_width(rd.line_thickness2)
             .set_color(Color::from(rd.line_color2));
 
+        let task_paints = rd
+            .colors
+            .iter()
+            .map(|color| {
+                let mut paint: Paint = Paint::default();
+
+                paint.set_style(paint::Style::Fill).set_color(*color);
+
+                return paint;
+            })
+            .collect::<Vec<_>>();
+
+        let black_paint = &mut Paint::default();
+
+        let font = Font::from_typeface(&Typeface::default(), rd.item_font_size);
+
+        black_paint
+            .set_style(paint::Style::Fill)
+            .set_color(Color::BLACK);
+
         let mut line_begin = (
             rd.chart_margin + rd.item_title_width,
             rd.chart_margin + rd.header_height,
         );
         let mut line_end = (line_begin.0, rd.height - rd.chart_margin);
 
-        for _ in 0..=rd.month_names.len() {
+        for i in 0..=rd.cols.len() {
             canvas.draw_path(&Path::line(line_begin, line_end), line_paint2);
 
-            line_begin.0 += rd.item_width;
-            line_end.0 += rd.item_width;
+            if i < rd.cols.len() {
+                let col = &rd.cols[i];
+                let month_name = MONTH_NAMES[col.name_index];
+                let (_, text_rect) = font.measure_str(month_name, Some(&black_paint));
+
+                canvas.draw_text_blob(
+                    &TextBlob::from_str(month_name, &font).unwrap(),
+                    (
+                        line_begin.0 + (col.width - text_rect.width()) / 2.0,
+                        line_begin.1 - rd.item_padding,
+                    ),
+                    &black_paint,
+                );
+
+                line_begin.0 += col.width;
+                line_end.0 += col.width;
+            }
         }
 
         line_begin = (rd.chart_margin, rd.chart_margin + rd.header_height);
@@ -277,24 +406,49 @@ impl<'a> GanttChartTool<'a> {
                 canvas.draw_path(&Path::line(line_begin, line_end), line_paint2);
             };
 
-            line_begin.1 += rd.item_height;
-            line_end.1 += rd.item_height;
-        }
+            if i < rd.rows.len() {
+                let row: &RowRenderData = &rd.rows[i];
 
-        // let paint2 = Paint::default();
-        // let text = "Hello, Skia!";
-        // let font = Font::from_typeface(&Typeface::default(), 18.0);
-        // let text_blob = TextBlob::from_str(text, &font).unwrap();
-        // let (text_scalar, text_rect) =
-        //     font.measure_text(text.as_bytes(), TextEncoding::UTF8, Some(&paint2));
-        // output!(
-        //     self.log,
-        //     "{}, {}, {}",
-        //     text_scalar,
-        //     text_rect.width(),
-        //     text_rect.height()
-        // );
-        // canvas.draw_text_blob(&text_blob, (50, 25), &paint2);
+                canvas.save();
+                canvas.clip_rect(
+                    &Rect::new(
+                        line_begin.0,
+                        line_begin.1 + rd.item_padding,
+                        line_begin.0 + rd.item_title_width - rd.item_padding,
+                        line_begin.1
+                            + rd.item_padding
+                            + rd.item_font_height.0
+                            + rd.item_font_height.1,
+                    ),
+                    ClipOp::Intersect,
+                    Some(true),
+                );
+                canvas.draw_text_blob(
+                    &TextBlob::from_str(&row.title, &font).unwrap(),
+                    (
+                        line_begin.0,
+                        line_begin.1 + rd.item_font_height.0 + rd.item_padding,
+                    ),
+                    &black_paint,
+                );
+                canvas.restore();
+
+                if let Some(length) = row.length {
+                    canvas.draw_round_rect(
+                        Rect::from_point_and_size(
+                            (row.start_offset, line_begin.1 + rd.item_padding),
+                            (length, rd.item_font_height.0),
+                        ),
+                        BAR_RADIUS,
+                        BAR_RADIUS,
+                        &task_paints[row.color_index],
+                    );
+                }
+            }
+
+            line_begin.1 += rd.item_font_height.0 + rd.item_padding * 2.0;
+            line_end.1 += rd.item_font_height.0 + rd.item_padding * 2.0;
+        }
 
         Ok(())
     }
