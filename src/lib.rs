@@ -48,12 +48,11 @@ pub struct ItemData {
     start_date: Option<NaiveDate>,
     #[serde(rename = "resource")]
     resource_index: Option<usize>,
-    #[serde(skip)]
-    end_date: Option<NaiveDate>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ResourceData {
+    #[allow(dead_code)]
     title: String,
     #[serde(rename = "color")]
     color_hex: u32,
@@ -61,6 +60,7 @@ pub struct ResourceData {
 
 #[derive(Deserialize, Debug)]
 pub struct ChartData {
+    #[allow(dead_code)]
     title: String,
     resources: Vec<ResourceData>,
     items: Vec<ItemData>,
@@ -175,7 +175,7 @@ impl<'a> GanttChartTool<'a> {
         let mut rd = RenderData {
             width: 0.0,
             height: 0.0,
-            header_height: 40.0,
+            header_height: 40.0, // TODO: Calculate this
             line_thickness1: 3.0,
             line_color1: 0xffaaaaaa,
             line_thickness2: 2.0,
@@ -200,10 +200,10 @@ impl<'a> GanttChartTool<'a> {
 
         rd.item_font_height = measure_text_height(MEASURED_TEXT, rd.item_font_size);
 
+        let bar_height = rd.item_font_height.0 + rd.item_font_height.1;
         let mut start_date = NaiveDate::MAX;
         let mut end_date = NaiveDate::MIN;
         let mut date = NaiveDate::MIN;
-        let mut color_index: usize = 0;
 
         // Determine the project start & end dates
 
@@ -230,8 +230,9 @@ impl<'a> GanttChartTool<'a> {
             }
 
             if let Some(item_resource_index) = item.resource_index {
-                // TODO: Ensure the index is in range
-                color_index = item_resource_index;
+                if item_resource_index >= chart_data.resources.len() {
+                    return Err(From::from(format!("Resource index is out of range")));
+                }
             } else if i == 0 {
                 return Err(From::from(format!(
                     "First item must contain a resource index"
@@ -259,9 +260,6 @@ impl<'a> GanttChartTool<'a> {
             num_item_days += item_days;
             all_items_width += item_width;
 
-            // println!("item_width={}", item_width);
-            println!("item_days={}", item_days);
-
             rd.cols.push(ColumnRenderData {
                 width: item_width,
                 name_index: (date.month() - 1) as usize,
@@ -271,20 +269,9 @@ impl<'a> GanttChartTool<'a> {
         }
 
         rd.width += all_items_width;
-
-        println!("num_item_days={}", num_item_days);
-        // println!("all_items_width={}", all_items_width);
-        // println!("width={}", rd.width);
-        // println!(
-        //     "item_title_width={}, {}",
-        //     rd.width - rd.chart_margin * 2.0 - all_items_width,
-        //     rd.item_title_width
-        // );
-        // println!("num_item_days={}", num_item_days);
-        // println!("start_date={}", start_date);
-
         date = start_date;
-        color_index = 0;
+
+        let mut color_index: usize = 0;
 
         for item in chart_data.items.iter() {
             if let Some(item_start_date) = item.start_date {
@@ -298,8 +285,6 @@ impl<'a> GanttChartTool<'a> {
 
             let mut length: Option<f32> = None;
 
-            // println!("{}, days={}", (date - start_date).num_days(), date);
-
             if let Some(item_days) = item.duration {
                 // TODO: Use the shadow duration not the actual duration
                 date += Duration::days(item_days);
@@ -310,7 +295,7 @@ impl<'a> GanttChartTool<'a> {
                 color_index = item_resource_index;
             }
 
-            rd.height += rd.item_font_height.0 + rd.item_padding * 2.0;
+            rd.height += bar_height + rd.item_padding * 2.0;
             rd.rows.push(RowRenderData {
                 title: item.title.clone(),
                 color_index,
@@ -351,7 +336,10 @@ impl<'a> GanttChartTool<'a> {
             .map(|color| {
                 let mut paint: Paint = Paint::default();
 
-                paint.set_style(paint::Style::Fill).set_color(*color);
+                paint
+                    .set_style(paint::Style::Fill)
+                    .set_color(*color)
+                    .set_anti_alias(true);
 
                 return paint;
             })
@@ -399,6 +387,9 @@ impl<'a> GanttChartTool<'a> {
             rd.chart_margin + rd.header_height,
         );
 
+        let bar_height = rd.item_font_height.0 + rd.item_font_height.1;
+        let line_height = bar_height + rd.item_padding * 2.0;
+
         for i in 0..=rd.rows.len() {
             if i == 0 || i == rd.rows.len() {
                 canvas.draw_path(&Path::line(line_begin, line_end), line_paint1);
@@ -415,10 +406,7 @@ impl<'a> GanttChartTool<'a> {
                         line_begin.0,
                         line_begin.1 + rd.item_padding,
                         line_begin.0 + rd.item_title_width - rd.item_padding,
-                        line_begin.1
-                            + rd.item_padding
-                            + rd.item_font_height.0
-                            + rd.item_font_height.1,
+                        line_begin.1 + line_height - rd.item_padding,
                     ),
                     ClipOp::Intersect,
                     Some(true),
@@ -437,17 +425,36 @@ impl<'a> GanttChartTool<'a> {
                     canvas.draw_round_rect(
                         Rect::from_point_and_size(
                             (row.start_offset, line_begin.1 + rd.item_padding),
-                            (length, rd.item_font_height.0),
+                            (length, bar_height),
                         ),
                         BAR_RADIUS,
                         BAR_RADIUS,
                         &task_paints[row.color_index],
                     );
+                } else {
+                    let mut path = Path::new();
+
+                    path.move_to((row.start_offset, line_begin.1 + rd.item_padding));
+                    path.line_to((
+                        row.start_offset + bar_height / 2.0,
+                        line_begin.1 + bar_height / 2.0 + rd.item_padding,
+                    ));
+                    path.line_to((
+                        row.start_offset,
+                        line_begin.1 + bar_height + rd.item_padding,
+                    ));
+                    path.line_to((
+                        row.start_offset - bar_height / 2.0,
+                        line_begin.1 + bar_height / 2.0 + rd.item_padding,
+                    ));
+                    path.close();
+
+                    canvas.draw_path(&path, black_paint);
                 }
             }
 
-            line_begin.1 += rd.item_font_height.0 + rd.item_padding * 2.0;
-            line_end.1 += rd.item_font_height.0 + rd.item_padding * 2.0;
+            line_begin.1 += line_height;
+            line_end.1 += line_height;
         }
 
         Ok(())
