@@ -6,7 +6,7 @@ authors = ["John Lyon-Smith <john@lyon-smith.org>"]
 readme = "README.md"
 description = "A tool generating Gantt charts"
 repository = "https://github.com/jlyonsmith/gantt_chart"
-keywords = ["gantt", "chart", "project", "graphics", "cairo"]
+keywords = ["gantt", "chart", "project", "graphics", "skia"]
 categories = ["command-line-utilities"]
 license = "Unlicense"
 
