@@ -2,7 +2,7 @@
 use chrono::{Datelike, Duration, NaiveDate};
 use clap::Parser;
 use core::fmt::Arguments;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use skia_safe::{
     paint, BlendMode, ClipOp, Color, EncodedImageFormat, Font, Paint, Path, Rect, Surface,
     TextBlob, Typeface,
@@ -40,30 +40,32 @@ pub struct GanttChartTool<'a> {
     log: &'a dyn GanttChartLog,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ItemData {
-    title: String,
-    duration: Option<i64>,
-    #[serde(rename = "startDate")]
-    start_date: Option<NaiveDate>,
+    pub title: String,
+    pub duration: Option<i64>,
+    #[serde(rename = "startDate", skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<NaiveDate>,
     #[serde(rename = "resource")]
-    resource_index: Option<usize>,
+    pub resource_index: Option<usize>,
+    #[allow(dead_code)]
+    pub open: bool,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ResourceData {
     #[allow(dead_code)]
-    title: String,
+    pub title: String,
     #[serde(rename = "color")]
-    color_hex: u32,
+    pub color_hex: u32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ChartData {
     #[allow(dead_code)]
-    title: String,
-    resources: Vec<ResourceData>,
-    items: Vec<ItemData>,
+    pub title: String,
+    pub resources: Vec<ResourceData>,
+    pub items: Vec<ItemData>,
 }
 
 struct RenderData {
