@@ -108,7 +108,7 @@ impl<'a> GanttChartTool<'a> {
         args: impl IntoIterator<Item = std::ffi::OsString>,
     ) -> Result<(), Box<dyn Error>> {
         let cli = match Cli::try_parse_from(args) {
-            Ok(m) => m,
+            Ok(cli) => cli,
             Err(err) => {
                 output!(self.log, "{}", err.to_string());
                 return Ok(());
