@@ -320,6 +320,7 @@ dependencies = [
  "chrono",
  "clap 4.0.7",
  "colored",
+ "hypermelon",
  "json5",
  "serde",
  "skia-safe",
@@ -367,6 +368,12 @@ name = "humantime"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
+name = "hypermelon"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17586512ea784af78de466c46f11fe96b53d67e0393cb7504cac1b7d2121200e"
 
 [[package]]
 name = "iana-time-zone"
