@@ -61,7 +61,8 @@ pub struct ResourceData {
 pub struct ChartData {
     #[allow(dead_code)]
     pub title: String,
-    pub markedDate: Option<NaiveDate>,
+    #[serde(rename = "markedDate")]
+    pub marked_date: Option<NaiveDate>,
     pub resources: Vec<ResourceData>,
     pub items: Vec<ItemData>,
 }
@@ -90,11 +91,11 @@ struct RenderData {
     gutter: Gutter,
     row_gutter: Gutter,
     row_height: f32,
+    marked_date_offset: Option<f32>,
     item_title_width: f32,
     max_month_width: f32,
     rect_corner_radius: f32,
     styles: Vec<String>,
-    resources: Vec<ResourceData>,
     cols: Vec<ColumnRenderData>,
     rows: Vec<RowRenderData>,
 }
@@ -260,6 +261,7 @@ impl<'a> GanttChartTool<'a> {
         let row_height = row_gutter.total_vertical() + 20.0;
         let mut rows = vec![];
 
+        // Calculate the X offsets of all the bars and milestones
         for item in chart_data.items.iter() {
             if let Some(item_start_date) = item.start_date {
                 date = item_start_date;
@@ -290,14 +292,27 @@ impl<'a> GanttChartTool<'a> {
             });
         }
 
+        let marked_date_offset = if let Some(date) = chart_data.marked_date {
+            // TODO(john): Put this offset calculation in a function
+            Some(
+                item_title_width
+                    + gutter.left
+                    + ((date - start_date).num_days() as f32) / (num_item_days as f32)
+                        * all_items_width,
+            )
+        } else {
+            None
+        };
+
         let mut styles = vec![
             ".outer-lines{stroke-width:3;stroke:#aaaaaa;}".to_owned(),
             ".inner-lines{stroke-width:2;stroke:#dddddd;}".to_owned(),
-            ".item{font-family:'Arial';font-size:12pt;dominant-baseline:middle;}".to_owned(),
-            ".title{font-family:'Arial';font-size:18pt;}".to_owned(),
-            ".heading{font-family:'Arial';font-size:16pt;dominant-baseline:middle;text-anchor:middle;}".to_owned(),
+            ".item{font-family:Arial;font-size:12pt;dominant-baseline:middle;}".to_owned(),
+            ".title{font-family:Arial;font-size:18pt;}".to_owned(),
+            ".heading{font-family:Arial;font-size:16pt;dominant-baseline:middle;text-anchor:middle;}".to_owned(),
             ".task-heading{dominant-baseline:middle;text-anchor:start;}".to_owned(),
             ".milestone{fill:black;stroke-width:1;stroke:black;}".to_owned(),
+            ".marker{stroke-width:2;stroke:#888888;stroke-dasharray:7;}".to_owned(),
         ];
 
         for (i, resource_data) in chart_data.resources.iter().enumerate() {
@@ -315,8 +330,8 @@ impl<'a> GanttChartTool<'a> {
             styles,
             item_title_width,
             max_month_width,
+            marked_date_offset,
             rect_corner_radius: 3.0,
-            resources: chart_data.resources.clone(),
             cols,
             rows,
         })
@@ -464,12 +479,29 @@ impl<'a> GanttChartTool<'a> {
             ))
             .append(format_move!("{}", &rd.title));
 
+        let marked = build::from_closure(move |w| {
+            if let Some(offset) = rd.marked_date_offset {
+                let marker = build::single("line").with(attrs!(
+                    ("class", "marker"),
+                    ("x1", offset),
+                    ("y1", rd.gutter.top - 5.0),
+                    ("x2", offset),
+                    ("y2", height - rd.gutter.bottom + 5.0)
+                ));
+
+                w.render(marker)
+            } else {
+                w.render(build::single("g"))
+            }
+        });
+
         let all = svg
             .append(style)
             .append(title)
             .append(columns)
             .append(tasks)
-            .append(rows);
+            .append(rows)
+            .append(marked);
 
         let mut output = String::new();
         hypermelon::render(all, &mut output)?;
