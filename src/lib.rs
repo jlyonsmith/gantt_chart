@@ -239,7 +239,11 @@ impl<'a> GanttChartTool<'a> {
                 month_name: MONTH_NAMES[date.month() as usize - 1].to_string(),
             });
 
-            date = NaiveDate::from_ymd(date.year(), date.month() % 12 + 1, 1);
+            date = NaiveDate::from_ymd(
+                date.year() + (if date.month() == 12 { 1 } else { 0 }),
+                date.month() % 12 + 1,
+                1,
+            );
         }
 
         date = start_date;
@@ -317,8 +321,8 @@ impl<'a> GanttChartTool<'a> {
 
         for (i, resource_data) in chart_data.resources.iter().enumerate() {
             styles.push(format!(
-                ".resource-{}{{fill:{};stroke-width:1;stroke:{};}}",
-                i, resource_data.color_hex, resource_data.color_hex,
+                ".resource-{}{{fill:{1};stroke-width:1;stroke:{1};}}",
+                i, resource_data.color_hex,
             ))
         }
 

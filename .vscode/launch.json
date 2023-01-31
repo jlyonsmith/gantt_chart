@@ -1,0 +1,66 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'gantt_chart'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--lib",
+          "--package=gantt_chart"
+        ],
+        "filter": {
+          "name": "gantt_chart",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'gantt_chart'",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=gantt_chart",
+          "--package=gantt_chart"
+        ],
+        "filter": {
+          "name": "gantt_chart",
+          "kind": "bin"
+        }
+      },
+      "args": [
+        "scratch/ceviche.json5",
+        "scratch/ceviche.svg"
+      ],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'gantt_chart'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--package=gantt_chart"
+        ],
+        "filter": {
+          "name": "gantt_chart",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
