@@ -3,14 +3,16 @@ use chrono::{Datelike, Duration, NaiveDate};
 use clap::Parser;
 use core::fmt::Arguments;
 use hypermelon::{attr::PathCommand::*, build, prelude::*};
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use std::fs;
-use std::io::Write;
+use std::fs::{self, File};
+use std::io::{self, Error as IoError, Read, Write};
 use std::path::PathBuf;
 
 mod log_macros;
 
+static GOLDEN_RATIO_CONJUGATE: f32 = 0.618033988749895;
 static MONTH_NAMES: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
@@ -20,11 +22,20 @@ static MONTH_NAMES: [&str; 12] = [
 struct Cli {
     /// Specify the JSON data file
     #[clap(value_name = "INPUT_FILE")]
-    input_file: PathBuf,
+    input_file: Option<PathBuf>,
 
     /// Specify the output SVG file
-    #[clap(value_name = "OUTPUT_FILE")]
+    #[clap(short, long = "output", value_name = "OUTPUT_FILE")]
     output_file: PathBuf,
+}
+
+impl Cli {
+    fn get_input(&self) -> Result<Box<dyn Read>, IoError> {
+        match self.input_file {
+            Some(ref path) => File::open(path).map(|f| Box::new(f) as Box<dyn Read>),
+            None => Ok(Box::new(io::stdin())),
+        }
+    }
 }
 
 pub trait GanttChartLog {
@@ -49,20 +60,11 @@ pub struct ItemData {
     pub open: Option<bool>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct ResourceData {
-    #[allow(dead_code)]
-    pub title: String,
-    #[serde(rename = "color")]
-    pub color_hex: String,
-}
-
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ChartData {
-    #[allow(dead_code)]
     pub title: String,
     pub marked_date: Option<NaiveDate>,
-    pub resources: Vec<ResourceData>,
+    pub resources: Vec<String>,
     pub items: Vec<ItemData>,
 }
 
@@ -130,7 +132,7 @@ impl<'a> GanttChartTool<'a> {
             }
         };
 
-        let chart_data = Self::read_chart_file(&cli.input_file)?;
+        let chart_data = Self::read_chart_file(cli.get_input()?)?;
         let render_data = self.process_chart_data(&chart_data)?;
         let output = self.render_chart(&render_data)?;
 
@@ -138,8 +140,11 @@ impl<'a> GanttChartTool<'a> {
         Ok(())
     }
 
-    fn read_chart_file(chart_file: &PathBuf) -> Result<ChartData, Box<dyn Error>> {
-        let content = fs::read_to_string(chart_file)?;
+    fn read_chart_file(mut reader: Box<dyn Read>) -> Result<ChartData, Box<dyn Error>> {
+        let mut content = String::new();
+
+        reader.read_to_string(&mut content)?;
+
         let chart_data: ChartData = json5::from_str(&content)?;
 
         Ok(chart_data)
@@ -151,6 +156,32 @@ impl<'a> GanttChartTool<'a> {
         file.write_all(output.as_bytes())?;
 
         Ok(())
+    }
+
+    fn hsv_to_rgb(h: f32, s: f32, v: f32) -> u32 {
+        let h_i = (h * 6.0) as usize;
+        let f = h * 6.0 - h_i as f32;
+        let p = v * (1.0 - s);
+        let q = v * (1.0 - f * s);
+        let t = v * (1.0 - (1.0 - f) * s);
+
+        fn rgb(r: f32, g: f32, b: f32) -> u32 {
+            ((r * 256.0) as u32) << 16 | ((g * 256.0) as u32) << 8 | ((b * 256.0) as u32)
+        }
+
+        if h_i == 0 {
+            rgb(v, t, p)
+        } else if h_i == 1 {
+            rgb(q, v, p)
+        } else if h_i == 2 {
+            rgb(p, v, t)
+        } else if h_i == 3 {
+            rgb(p, q, v)
+        } else if h_i == 4 {
+            rgb(t, p, v)
+        } else {
+            rgb(v, p, q)
+        }
     }
 
     fn process_chart_data(
@@ -303,11 +334,18 @@ impl<'a> GanttChartTool<'a> {
             ".milestone{fill:black;stroke-width:1;stroke:black;}".to_owned(),
         ];
 
-        for (i, resource_data) in chart_data.resources.iter().enumerate() {
+        // Generate random resource colors based on https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+        let mut rng = rand::thread_rng();
+        let mut h: f32 = rng.gen();
+
+        for i in 0..chart_data.resources.len() {
             styles.push(format!(
-                ".resource-{}{{fill:{1};stroke-width:1;stroke:{1};}}",
-                i, resource_data.color_hex,
-            ))
+                ".resource-{}{{fill:#{1:06x};stroke-width:1;stroke:#{1:06x};}}",
+                i,
+                GanttChartTool::hsv_to_rgb(h, 0.5, 0.5),
+            ));
+
+            h = (h + GOLDEN_RATIO_CONJUGATE) % 1.0;
         }
 
         Ok(RenderData {
