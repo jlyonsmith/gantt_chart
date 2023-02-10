@@ -2,16 +2,28 @@ coverage OPEN='':
   #!/usr/bin/env fish
   set -x RUSTFLAGS '-C instrument-coverage'
   set -x LLVM_PROFILE_FILE (pwd)'/scratch/'(whoami)'-%p-%m.profraw'
-  rm (pwd)/scratch/*.profraw
+  for file in (pwd)/scratch/*.profraw; rm $file; end
   cargo test --tests
   grcov . -s . --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./target/debug/coverage/ --excl-start '^//\s*\{grcov-excl-start\}' --excl-stop '^//\s*\{grcov-excl-end\}'
   cp ./target/debug/coverage/coverage.json ./coverage.json
-  if test '{{OPEN}}' = '--open'
+  if string match -r 'open$' -- '{{OPEN}}'
     open target/debug/coverage/index.html
   end
 
-doc:
+bench OPEN='':
+  #!/usr/bin/env fish
+  cargo criterion
+  if string match -r 'open$' -- '{{OPEN}}'
+    open target/criterion/reports/index.html
+  end
+
+doc OPEN='':
+  #!/usr/bin/env fish
+  if string match -r 'open$' -- '{{OPEN}}'
   cargo doc --open
+  else
+    cargo doc
+  end
 
 release OPERATION='incrPatch':
   #!/usr/bin/env fish
