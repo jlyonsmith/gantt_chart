@@ -1,10 +1,10 @@
 [package]
 name = "gantt_chart"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2021"
 authors = ["John Lyon-Smith <john@lyon-smith.org>"]
 readme = "README.md"
-description = "A tool generating Gantt charts"
+description = "A tool for generating Gantt charts"
 repository = "https://github.com/jlyonsmith/gantt_chart"
 keywords = ["gantt", "chart", "project", "graphics", "skia"]
 categories = ["command-line-utilities"]

@@ -1,0 +1,57 @@
+{
+  title: "Plant a Garden",
+  resources: ["Jane", "Mary", "Anne"],
+  markedDate: "2022-8-15",
+  items: [
+    {
+      title: "Design the layout",
+      startDate: "2022-7-15",
+      duration: 3,
+      resource: 0,
+    },
+    {
+      title: "Review with group",
+      duration: 1,
+    },
+    {
+      title: "Make adjustments",
+      duration: 2,
+    },
+    {
+      title: "Final review",
+      duration: 1,
+    },
+    {
+      title: "Select plants",
+      startDate: "2022-7-25",
+      duration: 5,
+      resource: 1,
+    },
+    {
+      title: "Deliver plants",
+      startDate: "2022-8-9",
+      duration: 1,
+    },
+    {
+      title: "Site preparation",
+      startDate: "2022-8-10",
+      duration: 5,
+      resource: 2,
+    },
+    {
+      title: "Plant trees",
+      duration: 3,
+    },
+    {
+      title: "Plant perennials",
+      duration: 3,
+    },
+    {
+      title: "Plant annuals",
+      duration: 2,
+    },
+    {
+      title: "Garden planted",
+    },
+  ],
+}
