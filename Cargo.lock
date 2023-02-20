@@ -321,7 +321,7 @@ dependencies = [
 
 [[package]]
 name = "gantt_chart"
-version = "2.0.0"
+version = "3.0.0"
 dependencies = [
  "chrono",
  "clap 4.0.7",

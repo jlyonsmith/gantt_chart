@@ -1,6 +1,6 @@
 [package]
 name = "gantt_chart"
-version = "2.0.0"
+version = "3.0.0"
 edition = "2021"
 authors = ["John Lyon-Smith <john@lyon-smith.org>"]
 readme = "README.md"
