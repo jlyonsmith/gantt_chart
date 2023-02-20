@@ -73,7 +73,6 @@ pub struct ItemData {
     pub start_date: Option<NaiveDate>,
     #[serde(rename = "resource")]
     pub resource_index: Option<usize>,
-    #[allow(dead_code)]
     pub open: Option<bool>,
 }
 
@@ -126,6 +125,7 @@ struct RowRenderData {
     offset: f32,
     // If length not present then this is a milestone
     length: Option<f32>,
+    open: bool,
 }
 
 #[derive(Debug)]
@@ -340,6 +340,7 @@ impl<'a> GanttChartTool<'a> {
                 resource_index,
                 offset,
                 length,
+                open: item.open.unwrap_or(false),
             });
         }
 
@@ -371,10 +372,15 @@ impl<'a> GanttChartTool<'a> {
         let mut h: f32 = rng.gen();
 
         for i in 0..chart_data.resources.len() {
+            let rgb = GanttChartTool::hsv_to_rgb(h, 0.5, 0.5);
+
             styles.push(format!(
-                ".resource-{}{{fill:#{1:06x};stroke-width:1;stroke:#{1:06x};}}",
-                i,
-                GanttChartTool::hsv_to_rgb(h, 0.5, 0.5),
+                ".resource-{}-closed{{fill:#{1:06x};stroke-width:1;stroke:#{1:06x};}}",
+                i, rgb,
+            ));
+            styles.push(format!(
+                ".resource-{}-open{{fill:none;stroke-width:2;stroke:#{1:06x};}}",
+                i, rgb,
             ));
 
             h = (h + GOLDEN_RATIO_CONJUGATE) % 1.0;
@@ -450,7 +456,14 @@ impl<'a> GanttChartTool<'a> {
                     // Is this a task or a milestone?
                     if let Some(length) = row.length {
                         let bar = build::single("rect").with(attrs!(
-                            ("class", format_move!("resource-{}", row.resource_index)),
+                            (
+                                "class",
+                                format_move!(
+                                    "resource-{}{}",
+                                    row.resource_index,
+                                    if row.open { "-open" } else { "-closed" }
+                                )
+                            ),
                             ("x", row.offset),
                             ("y", y + rd.row_gutter.top,),
                             ("rx", rd.rect_corner_radius),

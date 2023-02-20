@@ -37,21 +37,26 @@
       startDate: "2022-8-10",
       duration: 5,
       resource: 2,
+      closed: false,
     },
     {
       title: "Plant trees",
       duration: 3,
+      closed: false,
     },
     {
       title: "Plant perennials",
       duration: 3,
+      closed: false,
     },
     {
       title: "Plant annuals",
       duration: 2,
+      closed: false,
     },
     {
       title: "Garden planted",
+      closed: false,
     },
   ],
 }
