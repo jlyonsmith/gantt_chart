@@ -37,6 +37,10 @@ struct Cli {
     /// The maximum width of each month
     #[arg(value_name = "WIDTH", short, long, default_value_t = 80.0)]
     max_month_width: f32,
+
+    /// Add a resource table at the bottom of the graph
+    #[arg(short, long, default_value_t = false)]
+    add_resource_table: bool,
 }
 
 impl Cli {
@@ -94,11 +98,11 @@ pub struct Gutter {
 }
 
 impl Gutter {
-    pub fn total_vertical(&self) -> f32 {
+    pub fn height(&self) -> f32 {
         self.bottom + self.top
     }
 
-    pub fn total_horizontal(&self) -> f32 {
+    pub fn width(&self) -> f32 {
         self.right + self.left
     }
 }
@@ -109,6 +113,8 @@ struct RenderData {
     gutter: Gutter,
     row_gutter: Gutter,
     row_height: f32,
+    resource_gutter: Gutter,
+    resource_height: f32,
     marked_date_offset: Option<f32>,
     title_width: f32,
     max_month_width: f32,
@@ -116,6 +122,7 @@ struct RenderData {
     styles: Vec<String>,
     cols: Vec<ColumnRenderData>,
     rows: Vec<RowRenderData>,
+    resources: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -154,7 +161,7 @@ impl<'a> GanttChartTool<'a> {
         let chart_data = Self::read_chart_file(cli.get_input()?)?;
         let render_data =
             self.process_chart_data(cli.title_width, cli.max_month_width, &chart_data)?;
-        let output = self.render_chart(&render_data)?;
+        let output = self.render_chart(cli.add_resource_table, &render_data)?;
 
         Self::write_svg_file(cli.get_output()?, &output)?;
         Ok(())
@@ -221,7 +228,7 @@ impl<'a> GanttChartTool<'a> {
             d.pred().day()
         }
 
-        // TODO: Fail if only one task
+        // TODO(john): Fail if only one task
 
         let mut start_date = NaiveDate::MAX;
         let mut end_date = NaiveDate::MIN;
@@ -242,7 +249,7 @@ impl<'a> GanttChartTool<'a> {
 
             if let Some(item_days) = item.duration {
                 // TODO(john): Be smarter about adding days and skip the weekends
-                // TODO(john): Keep a "shadow" list of the _real_ duration including weekends
+                // TODO(john): Keep a "shadow" list of the _real_ durations that includes the weekends
                 date += Duration::days(item_days);
             }
 
@@ -309,7 +316,15 @@ impl<'a> GanttChartTool<'a> {
             right: 5.0,
             bottom: 5.0,
         };
-        let row_height = row_gutter.total_vertical() + 20.0;
+        // TODO(john): The 20.0 should be configurable, and for the resource table
+        let row_height = row_gutter.height() + 20.0;
+        let resource_gutter = Gutter {
+            left: 10.0,
+            top: 10.0,
+            right: 10.0,
+            bottom: 10.0,
+        };
+        let resource_height = resource_gutter.height() + 20.0;
         let mut rows = vec![];
 
         // Calculate the X offsets of all the bars and milestones
@@ -326,7 +341,7 @@ impl<'a> GanttChartTool<'a> {
             let mut length: Option<f32> = None;
 
             if let Some(item_days) = item.duration {
-                // TODO(john): Use the shadow duration not the actual duration (see comment above)
+                // TODO(john): Use the "shadow" duration instead of the actual duration (see comment above)
                 date += Duration::days(item_days);
                 length = Some((item_days as f32) / (num_item_days as f32) * all_items_width);
             }
@@ -360,6 +375,7 @@ impl<'a> GanttChartTool<'a> {
             ".outer-lines{stroke-width:3;stroke:#aaaaaa;}".to_owned(),
             ".inner-lines{stroke-width:2;stroke:#dddddd;}".to_owned(),
             ".item{font-family:Arial;font-size:12pt;dominant-baseline:middle;}".to_owned(),
+            ".resource{font-family:Arial;font-size:12pt;text-anchor:end;dominant-baseline:middle;}".to_owned(),
             ".title{font-family:Arial;font-size:18pt;}".to_owned(),
             ".heading{font-family:Arial;font-size:16pt;dominant-baseline:middle;text-anchor:middle;}".to_owned(),
             ".task-heading{dominant-baseline:middle;text-anchor:start;}".to_owned(),
@@ -391,6 +407,8 @@ impl<'a> GanttChartTool<'a> {
             gutter,
             row_gutter,
             row_height,
+            resource_gutter,
+            resource_height,
             styles,
             title_width,
             max_month_width,
@@ -398,15 +416,27 @@ impl<'a> GanttChartTool<'a> {
             rect_corner_radius: 3.0,
             cols,
             rows,
+            resources: chart_data.resources.clone(),
         })
     }
 
-    fn render_chart(&self, rd: &RenderData) -> Result<String, Box<dyn Error>> {
+    fn render_chart(
+        &self,
+        add_resource_table: bool,
+        rd: &RenderData,
+    ) -> Result<String, Box<dyn Error>> {
         let width: f32 = rd.gutter.left
             + rd.title_width
             + rd.cols.iter().map(|col| col.width).sum::<f32>()
             + rd.gutter.right;
-        let height = rd.gutter.top + (rd.rows.len() as f32 * rd.row_height) + rd.gutter.bottom;
+        let height = rd.gutter.top
+            + (rd.rows.len() as f32 * rd.row_height)
+            + (if add_resource_table {
+                rd.resource_gutter.height() + rd.row_height
+            } else {
+                0.0
+            })
+            + rd.gutter.bottom;
 
         let style = build::elem("style").append(build::from_iter(rd.styles.iter()));
 
@@ -469,12 +499,12 @@ impl<'a> GanttChartTool<'a> {
                             ("rx", rd.rect_corner_radius),
                             ("ry", rd.rect_corner_radius),
                             ("width", length),
-                            ("height", rd.row_height - rd.row_gutter.total_vertical())
+                            ("height", rd.row_height - rd.row_gutter.height())
                         ));
 
                         w.render(line.append(text).append(bar))
                     } else {
-                        let n = (rd.row_height - rd.row_gutter.total_vertical()) / 2.0;
+                        let n = (rd.row_height - rd.row_gutter.height()) / 2.0;
 
                         let milestone = build::single("path").with(attrs!(
                             ("class", "milestone"),
@@ -506,7 +536,10 @@ impl<'a> GanttChartTool<'a> {
                     ("x1", x),
                     ("y1", rd.gutter.top),
                     ("x2", x),
-                    ("y2", height - rd.gutter.bottom)
+                    (
+                        "y2",
+                        rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height)
+                    )
                 ));
 
                 if i < rd.cols.len() {
@@ -516,7 +549,7 @@ impl<'a> GanttChartTool<'a> {
                             ("x", x + rd.max_month_width / 2.0),
                             (
                                 "y",
-                                // TODO(john): Use more appropriate row height value here?
+                                // TODO(john): Use a more appropriate row height value here?
                                 rd.gutter.top - rd.row_gutter.bottom - rd.row_height / 2.0
                             )
                         ))
@@ -557,7 +590,10 @@ impl<'a> GanttChartTool<'a> {
                     ("x1", offset),
                     ("y1", rd.gutter.top - 5.0),
                     ("x2", offset),
-                    ("y2", height - rd.gutter.bottom + 5.0)
+                    (
+                        "y2",
+                        rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height) + 5.0
+                    )
                 ));
 
                 w.render(marker)
@@ -566,13 +602,49 @@ impl<'a> GanttChartTool<'a> {
             }
         });
 
+        let resources =
+            build::elem("g").append(build::from_iter((0..rd.resources.len()).map(|i| {
+                build::from_closure(move |w| {
+                    if add_resource_table {
+                        let y = rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height);
+                        let block_width = rd.resource_height - rd.resource_gutter.height();
+                        let text = build::elem("text")
+                            .with(attrs!(
+                                ("class", "resource"),
+                                (
+                                    "x",
+                                    rd.resource_gutter.left + ((i + 1) as f32) * 100.0 - 5.0
+                                ),
+                                ("y", y + rd.resource_height / 2.0)
+                            ))
+                            .append(format_move!("{}", &rd.resources[i]));
+                        let block = build::single("rect").with(attrs!(
+                            ("class", format_move!("resource-{}-closed", i)),
+                            (
+                                "x",
+                                rd.resource_gutter.left + ((i + 1) as f32) * 100.0 + 5.0
+                            ),
+                            ("y", y + rd.resource_gutter.top),
+                            ("rx", rd.rect_corner_radius),
+                            ("ry", rd.rect_corner_radius),
+                            ("width", block_width),
+                            ("height", block_width)
+                        ));
+                        w.render(block.append(text))
+                    } else {
+                        w.render(build::single("g"))
+                    }
+                })
+            })));
+
         let all = svg
             .append(style)
             .append(title)
             .append(columns)
             .append(tasks)
             .append(rows)
-            .append(marked);
+            .append(marked)
+            .append(resources);
 
         let mut output = String::new();
         hypermelon::render(all, &mut output)?;
