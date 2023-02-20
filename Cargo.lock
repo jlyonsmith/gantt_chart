@@ -162,7 +162,7 @@ checksum = "04cc9717c61d2908f50d16ebb5677c7e82ea2bdf7cb52f66b30fe079f3212e16"
 
 [[package]]
 name = "gantt_chart"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "chrono",
  "clap",
