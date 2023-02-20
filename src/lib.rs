@@ -1,5 +1,5 @@
 /// Generate a Gantt chart
-use chrono::{Datelike, Duration, NaiveDate};
+use chrono::{Datelike, Duration, NaiveDate, Weekday};
 use clap::Parser;
 use core::fmt::Arguments;
 use easy_error::{self, bail, ResultExt};
@@ -246,6 +246,7 @@ impl<'a> GanttChartTool<'a> {
         let mut start_date = NaiveDate::MAX;
         let mut end_date = NaiveDate::MIN;
         let mut date = NaiveDate::MIN;
+        let mut shadow_durations: Vec<Option<i64>> = Vec::with_capacity(chart_data.items.len());
 
         // Determine the project start & end dates
         for (i, item) in chart_data.items.iter().enumerate() {
@@ -253,17 +254,30 @@ impl<'a> GanttChartTool<'a> {
                 date = item_start_date;
 
                 if item_start_date < start_date {
-                    // TODO: Ensure the start date is not on a weekend
-                    start_date = date;
+                    // Move the start if it falls on a weekend
+                    start_date = match date.weekday() {
+                        Weekday::Sat => date + Duration::days(2),
+                        Weekday::Sun => date + Duration::days(1),
+                        _ => date,
+                    };
                 }
             } else if i == 0 {
                 return Err(From::from(format!("First item must contain a start date")));
             }
 
+            // Skip the weekends and update a shadow list of the _real_ durations
             if let Some(item_days) = item.duration {
-                // TODO(john): Be smarter about adding days and skip the weekends
-                // TODO(john): Keep a "shadow" list of the _real_ durations that includes the weekends
-                date += Duration::days(item_days);
+                let duration = match (date + Duration::days(item_days)).weekday() {
+                    Weekday::Sat => Duration::days(item_days + 2),
+                    Weekday::Sun => Duration::days(item_days + 1),
+                    _ => Duration::days(item_days),
+                };
+
+                date += duration;
+
+                shadow_durations.push(Some(duration.num_days()));
+            } else {
+                shadow_durations.push(None);
             }
 
             if end_date < date {
@@ -341,7 +355,7 @@ impl<'a> GanttChartTool<'a> {
         let mut rows = vec![];
 
         // Calculate the X offsets of all the bars and milestones
-        for item in chart_data.items.iter() {
+        for (i, item) in chart_data.items.iter().enumerate() {
             if let Some(item_start_date) = item.start_date {
                 date = item_start_date;
             }
@@ -353,8 +367,8 @@ impl<'a> GanttChartTool<'a> {
 
             let mut length: Option<f32> = None;
 
-            if let Some(item_days) = item.duration {
-                // TODO(john): Use the "shadow" duration instead of the actual duration (see comment above)
+            if let Some(item_days) = shadow_durations[i] {
+                // Use the shadow duration instead of the actual duration as it accounts for weekends
                 date += Duration::days(item_days);
                 length = Some((item_days as f32) / (num_item_days as f32) * all_items_width);
             }
