@@ -1,5 +1,9 @@
 # Gantt Chart Generator
 
+[![coverage](https://shields.io/endpoint?url=https://raw.githubusercontent.com/jlyonsmith/gantt_chart/main/coverage.json)](https://github.com/jlyonsmith/gantt_chart/blob/main/coverage.json)
+[![Crates.io](https://img.shields.io/crates/v/gantt_chart.svg)](https://crates.io/crates/gantt_chart)
+[![Docs.rs](https://docs.rs/gantt_chart/badge.svg)](https://docs.rs/gantt_chart)
+
 *New in v2.0, the tool now generates SVG files.*
 
 This is a tool to generate simple Gantt charts. Here's some sample output:
@@ -7,6 +11,8 @@ This is a tool to generate simple Gantt charts. Here's some sample output:
 ![Gantt Chart Output](example/project.svg)
 
 The focus of the tool is the generation of the chart from existing data and not the calculation of project dependencies.
+
+Install with `cargo install gantt_chart`.  Run with `gantt-chart`.
 
 It has the following features:
 

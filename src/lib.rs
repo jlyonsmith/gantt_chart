@@ -5,10 +5,12 @@ use core::fmt::Arguments;
 use hypermelon::{attr::PathCommand::*, build, prelude::*};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-use std::fs::{self, File};
-use std::io::{self, Error as IoError, Read, Write};
-use std::path::PathBuf;
+use std::{
+    error::Error,
+    fs::File,
+    io::{self, Error as IoError, Read, Write},
+    path::PathBuf,
+};
 
 mod log_macros;
 
@@ -21,15 +23,30 @@ static MONTH_NAMES: [&str; 12] = [
 #[clap(version, about, long_about = None)]
 struct Cli {
     /// Specify the JSON data file
-    #[clap(value_name = "INPUT_FILE")]
+    #[arg(value_name = "INPUT_FILE")]
     input_file: Option<PathBuf>,
 
-    /// Specify the output SVG file
-    #[clap(short, long = "output", value_name = "OUTPUT_FILE")]
-    output_file: PathBuf,
+    /// The SVG output file
+    #[arg(value_name = "OUTPUT_FILE")]
+    output_file: Option<PathBuf>,
+
+    /// The width of the item title column
+    #[arg(value_name = "WIDTH", short, long, default_value_t = 210.0)]
+    title_width: f32,
+
+    /// The maximum width of each month
+    #[arg(value_name = "WIDTH", short, long, default_value_t = 80.0)]
+    max_month_width: f32,
 }
 
 impl Cli {
+    fn get_output(&self) -> Result<Box<dyn Write>, IoError> {
+        match self.output_file {
+            Some(ref path) => File::create(path).map(|f| Box::new(f) as Box<dyn Write>),
+            None => Ok(Box::new(io::stdout())),
+        }
+    }
+
     fn get_input(&self) -> Result<Box<dyn Read>, IoError> {
         match self.input_file {
             Some(ref path) => File::open(path).map(|f| Box::new(f) as Box<dyn Read>),
@@ -94,7 +111,7 @@ struct RenderData {
     row_gutter: Gutter,
     row_height: f32,
     marked_date_offset: Option<f32>,
-    item_title_width: f32,
+    title_width: f32,
     max_month_width: f32,
     rect_corner_radius: f32,
     styles: Vec<String>,
@@ -135,10 +152,11 @@ impl<'a> GanttChartTool<'a> {
         };
 
         let chart_data = Self::read_chart_file(cli.get_input()?)?;
-        let render_data = self.process_chart_data(&chart_data)?;
+        let render_data =
+            self.process_chart_data(cli.title_width, cli.max_month_width, &chart_data)?;
         let output = self.render_chart(&render_data)?;
 
-        Self::write_svg_file(&cli.output_file, &output)?;
+        Self::write_svg_file(cli.get_output()?, &output)?;
         Ok(())
     }
 
@@ -152,10 +170,8 @@ impl<'a> GanttChartTool<'a> {
         Ok(chart_data)
     }
 
-    fn write_svg_file(svg_file: &PathBuf, output: &str) -> Result<(), Box<dyn Error>> {
-        let mut file = fs::File::create(svg_file)?;
-
-        file.write_all(output.as_bytes())?;
+    fn write_svg_file(mut writer: Box<dyn Write>, output: &str) -> Result<(), Box<dyn Error>> {
+        write!(writer, "{}", output)?;
 
         Ok(())
     }
@@ -188,6 +204,8 @@ impl<'a> GanttChartTool<'a> {
 
     fn process_chart_data(
         self: &Self,
+        title_width: f32,
+        max_month_width: f32,
         chart_data: &ChartData,
     ) -> Result<RenderData, Box<dyn Error>> {
         fn num_days_in_month(year: i32, month: u32) -> u32 {
@@ -254,7 +272,6 @@ impl<'a> GanttChartTool<'a> {
         let mut all_items_width: f32 = 0.0;
         let mut num_item_days: u32 = 0;
         let mut cols = vec![];
-        let max_month_width = 80.0;
 
         date = start_date;
 
@@ -280,7 +297,6 @@ impl<'a> GanttChartTool<'a> {
         date = start_date;
 
         let mut resource_index: usize = 0;
-        let item_title_width = 210.0;
         let gutter = Gutter {
             left: 10.0,
             top: 80.0,
@@ -302,7 +318,7 @@ impl<'a> GanttChartTool<'a> {
                 date = item_start_date;
             }
 
-            let offset = item_title_width
+            let offset = title_width
                 + gutter.left
                 + ((date - start_date).num_days() as f32) / (num_item_days as f32)
                     * all_items_width;
@@ -330,7 +346,7 @@ impl<'a> GanttChartTool<'a> {
         let marked_date_offset = if let Some(date) = chart_data.marked_date {
             // TODO(john): Put this offset calculation in a function
             Some(
-                item_title_width
+                title_width
                     + gutter.left
                     + ((date - start_date).num_days() as f32) / (num_item_days as f32)
                         * all_items_width,
@@ -370,7 +386,7 @@ impl<'a> GanttChartTool<'a> {
             row_gutter,
             row_height,
             styles,
-            item_title_width,
+            title_width,
             max_month_width,
             marked_date_offset,
             rect_corner_radius: 3.0,
@@ -381,7 +397,7 @@ impl<'a> GanttChartTool<'a> {
 
     fn render_chart(&self, rd: &RenderData) -> Result<String, Box<dyn Error>> {
         let width: f32 = rd.gutter.left
-            + rd.item_title_width
+            + rd.title_width
             + rd.cols.iter().map(|col| col.width).sum::<f32>()
             + rd.gutter.right;
         let height = rd.gutter.top + (rd.rows.len() as f32 * rd.row_height) + rd.gutter.bottom;
@@ -470,7 +486,7 @@ impl<'a> GanttChartTool<'a> {
         let columns = build::elem("g").append(build::from_iter((0..=rd.cols.len()).map(|i| {
             build::from_closure(move |w| {
                 let x: f32 = rd.gutter.left
-                    + rd.item_title_width
+                    + rd.title_width
                     + rd.cols.iter().take(i).map(|col| col.width).sum::<f32>();
                 let line = build::single("line").with(attrs!(
                     ("class", "inner-lines"),
