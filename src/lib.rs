@@ -2,13 +2,14 @@
 use chrono::{Datelike, Duration, NaiveDate};
 use clap::Parser;
 use core::fmt::Arguments;
+use easy_error::{self, bail, ResultExt};
 use hypermelon::{attr::PathCommand::*, build, prelude::*};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     fs::File,
-    io::{self, Error as IoError, Read, Write},
+    io::{self, Read, Write},
     path::PathBuf,
 };
 
@@ -44,16 +45,25 @@ struct Cli {
 }
 
 impl Cli {
-    fn get_output(&self) -> Result<Box<dyn Write>, IoError> {
+    fn get_output(&self) -> Result<Box<dyn Write>, Box<dyn Error>> {
         match self.output_file {
-            Some(ref path) => File::create(path).map(|f| Box::new(f) as Box<dyn Write>),
+            Some(ref path) => File::create(path)
+                .context(format!(
+                    "Unable to create file '{}'",
+                    path.to_string_lossy()
+                ))
+                .map(|f| Box::new(f) as Box<dyn Write>)
+                .map_err(|e| Box::new(e) as Box<dyn Error>),
             None => Ok(Box::new(io::stdout())),
         }
     }
 
-    fn get_input(&self) -> Result<Box<dyn Read>, IoError> {
+    fn get_input(&self) -> Result<Box<dyn Read>, Box<dyn Error>> {
         match self.input_file {
-            Some(ref path) => File::open(path).map(|f| Box::new(f) as Box<dyn Read>),
+            Some(ref path) => File::open(path)
+                .context(format!("Unable to open file '{}'", path.to_string_lossy()))
+                .map(|f| Box::new(f) as Box<dyn Read>)
+                .map_err(|e| Box::new(e) as Box<dyn Error>),
             None => Ok(Box::new(io::stdin())),
         }
     }
@@ -228,7 +238,10 @@ impl<'a> GanttChartTool<'a> {
             d.pred().day()
         }
 
-        // TODO(john): Fail if only one task
+        // Fail if only one task
+        if chart_data.items.len() < 2 {
+            bail!("You must provide more than one task");
+        }
 
         let mut start_date = NaiveDate::MAX;
         let mut end_date = NaiveDate::MIN;
