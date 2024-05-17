@@ -12,6 +12,10 @@ use std::{
     io::{self, Read, Write},
     path::PathBuf,
 };
+use svg::{
+    node::element::{path::Data, Path, Style},
+    Document,
+};
 
 mod log_macros;
 
@@ -465,216 +469,226 @@ impl<'a> GanttChartTool<'a> {
             })
             + rd.gutter.bottom;
 
-        let style = build::elem("style").append(build::from_iter(rd.styles.iter()));
+        let document = Document::new()
+            .set("viewbox", (0, 0, width, height))
+            .set("xmlns", "http://www.w3.org/2000/svg")
+            .set("width", width)
+            .set("height", height)
+            .set("style", "background-color: white;")
+            .add(Style::new(rd.styles.join("\n")));
 
-        let svg = build::elem("svg").with(attrs!(
-            ("xmlns", "http://www.w3.org/2000/svg"),
-            ("width", width),
-            ("height", height),
-            ("viewBox", format_move!("0 0 {} {}", width, height)),
-            ("style", "background-color: white;")
-        ));
+        sg::save("test.svg", &document)?;
 
-        // Render all the chart rows
-        let rows = build::elem("g").append(build::from_iter((0..=rd.rows.len()).map(|i| {
-            build::from_closure(move |w| {
-                let y = rd.gutter.top + (i as f32 * rd.row_height);
-                let line;
+        // let style = build::elem("style").append(build::from_iter(rd.styles.iter()));
 
-                if i == 0 || i == rd.rows.len() {
-                    line = build::single("line").with(attrs!(
-                        ("class", "outer-lines"),
-                        ("x1", rd.gutter.left),
-                        ("y1", y),
-                        ("x2", width - rd.gutter.right),
-                        ("y2", y)
-                    ));
-                } else {
-                    line = build::single("line").with(attrs!(
-                        ("class", "inner-lines"),
-                        ("x1", rd.gutter.left),
-                        ("y1", y),
-                        ("x2", width - rd.gutter.right),
-                        ("y2", y)
-                    ));
-                }
+        // let svg = build::elem("svg").with(attrs!(
+        //     ("xmlns", "http://www.w3.org/2000/svg"),
+        //     ("width", width),
+        //     ("height", height),
+        //     ("viewBox", format_move!("0 0 {} {}", width, height)),
+        //     ("style", "background-color: white;")
+        // ));
 
-                // Are we on one of the task rows?
-                if i < rd.rows.len() {
-                    let row: &RowRenderData = &rd.rows[i];
-                    let text = build::elem("text")
-                        .with(attrs!(
-                            ("class", "item"),
-                            ("x", rd.gutter.left + rd.row_gutter.left),
-                            ("y", y + rd.row_gutter.top + rd.row_height / 2.0)
-                        ))
-                        .append(format_move!("{}", &row.title));
+        // // Render all the chart rows
+        // let rows = build::elem("g").append(build::from_iter((0..=rd.rows.len()).map(|i| {
+        //     build::from_closure(move |w| {
+        //         let y = rd.gutter.top + (i as f32 * rd.row_height);
+        //         let line;
 
-                    // Is this a task or a milestone?
-                    if let Some(length) = row.length {
-                        let bar = build::single("rect").with(attrs!(
-                            (
-                                "class",
-                                format_move!(
-                                    "resource-{}{}",
-                                    row.resource_index,
-                                    if row.open { "-open" } else { "-closed" }
-                                )
-                            ),
-                            ("x", row.offset),
-                            ("y", y + rd.row_gutter.top,),
-                            ("rx", rd.rect_corner_radius),
-                            ("ry", rd.rect_corner_radius),
-                            ("width", length),
-                            ("height", rd.row_height - rd.row_gutter.height())
-                        ));
+        //         if i == 0 || i == rd.rows.len() {
+        //             line = build::single("line").with(attrs!(
+        //                 ("class", "outer-lines"),
+        //                 ("x1", rd.gutter.left),
+        //                 ("y1", y),
+        //                 ("x2", width - rd.gutter.right),
+        //                 ("y2", y)
+        //             ));
+        //         } else {
+        //             line = build::single("line").with(attrs!(
+        //                 ("class", "inner-lines"),
+        //                 ("x1", rd.gutter.left),
+        //                 ("y1", y),
+        //                 ("x2", width - rd.gutter.right),
+        //                 ("y2", y)
+        //             ));
+        //         }
 
-                        w.render(line.append(text).append(bar))
-                    } else {
-                        let n = (rd.row_height - rd.row_gutter.height()) / 2.0;
+        //         // Are we on one of the task rows?
+        //         if i < rd.rows.len() {
+        //             let row: &RowRenderData = &rd.rows[i];
+        //             let text = build::elem("text")
+        //                 .with(attrs!(
+        //                     ("class", "item"),
+        //                     ("x", rd.gutter.left + rd.row_gutter.left),
+        //                     ("y", y + rd.row_gutter.top + rd.row_height / 2.0)
+        //                 ))
+        //                 .append(format_move!("{}", &row.title));
 
-                        let milestone = build::single("path").with(attrs!(
-                            ("class", "milestone"),
-                            build::path([
-                                M(row.offset - n, y + rd.row_gutter.top + n),
-                                L_(n, -n),
-                                L_(n, n),
-                                L_(-n, n),
-                                L_(-n, -n)
-                            ])
-                        ));
+        //             // Is this a task or a milestone?
+        //             if let Some(length) = row.length {
+        //                 let bar = build::single("rect").with(attrs!(
+        //                     (
+        //                         "class",
+        //                         format_move!(
+        //                             "resource-{}{}",
+        //                             row.resource_index,
+        //                             if row.open { "-open" } else { "-closed" }
+        //                         )
+        //                     ),
+        //                     ("x", row.offset),
+        //                     ("y", y + rd.row_gutter.top,),
+        //                     ("rx", rd.rect_corner_radius),
+        //                     ("ry", rd.rect_corner_radius),
+        //                     ("width", length),
+        //                     ("height", rd.row_height - rd.row_gutter.height())
+        //                 ));
 
-                        w.render(line.append(text).append(milestone))
-                    }
-                } else {
-                    w.render(line)
-                }
-            })
-        })));
+        //                 w.render(line.append(text).append(bar))
+        //             } else {
+        //                 let n = (rd.row_height - rd.row_gutter.height()) / 2.0;
 
-        // Render all the charts columns
-        let columns = build::elem("g").append(build::from_iter((0..=rd.cols.len()).map(|i| {
-            build::from_closure(move |w| {
-                let x: f32 = rd.gutter.left
-                    + rd.title_width
-                    + rd.cols.iter().take(i).map(|col| col.width).sum::<f32>();
-                let line = build::single("line").with(attrs!(
-                    ("class", "inner-lines"),
-                    ("x1", x),
-                    ("y1", rd.gutter.top),
-                    ("x2", x),
-                    (
-                        "y2",
-                        rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height)
-                    )
-                ));
+        //                 let milestone = build::single("path").with(attrs!(
+        //                     ("class", "milestone"),
+        //                     build::path([
+        //                         M(row.offset - n, y + rd.row_gutter.top + n),
+        //                         L_(n, -n),
+        //                         L_(n, n),
+        //                         L_(-n, n),
+        //                         L_(-n, -n)
+        //                     ])
+        //                 ));
 
-                if i < rd.cols.len() {
-                    let text = build::elem("text")
-                        .with(attrs!(
-                            ("class", "heading"),
-                            ("x", x + rd.max_month_width / 2.0),
-                            (
-                                "y",
-                                // TODO(john): Use a more appropriate row height value here?
-                                rd.gutter.top - rd.row_gutter.bottom - rd.row_height / 2.0
-                            )
-                        ))
-                        .append(format_move!("{}", &rd.cols[i].month_name));
+        //                 w.render(line.append(text).append(milestone))
+        //             }
+        //         } else {
+        //             w.render(line)
+        //         }
+        //     })
+        // })));
 
-                    w.render(line.append(text))
-                } else {
-                    w.render(line)
-                }
-            })
-        })));
+        // // Render all the charts columns
+        // let columns = build::elem("g").append(build::from_iter((0..=rd.cols.len()).map(|i| {
+        //     build::from_closure(move |w| {
+        //         let x: f32 = rd.gutter.left
+        //             + rd.title_width
+        //             + rd.cols.iter().take(i).map(|col| col.width).sum::<f32>();
+        //         let line = build::single("line").with(attrs!(
+        //             ("class", "inner-lines"),
+        //             ("x1", x),
+        //             ("y1", rd.gutter.top),
+        //             ("x2", x),
+        //             (
+        //                 "y2",
+        //                 rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height)
+        //             )
+        //         ));
 
-        let tasks = build::elem("text")
-            .with(attrs!(
-                ("class", "heading task-heading"),
-                ("x", rd.gutter.left + rd.row_gutter.left),
-                // TODO(john): Use more appropriate row height value here?
-                (
-                    "y",
-                    rd.gutter.top - rd.row_gutter.bottom - rd.row_height / 2.0
-                )
-            ))
-            .append("Tasks");
+        //         if i < rd.cols.len() {
+        //             let text = build::elem("text")
+        //                 .with(attrs!(
+        //                     ("class", "heading"),
+        //                     ("x", x + rd.max_month_width / 2.0),
+        //                     (
+        //                         "y",
+        //                         // TODO(john): Use a more appropriate row height value here?
+        //                         rd.gutter.top - rd.row_gutter.bottom - rd.row_height / 2.0
+        //                     )
+        //                 ))
+        //                 .append(format_move!("{}", &rd.cols[i].month_name));
 
-        let title = build::elem("text")
-            .with(attrs!(
-                ("class", "title"),
-                ("x", rd.gutter.left),
-                // TODO(john): Use more appropriate row height value here?
-                ("y", 25.0)
-            ))
-            .append(format_move!("{}", &rd.title));
+        //             w.render(line.append(text))
+        //         } else {
+        //             w.render(line)
+        //         }
+        //     })
+        // })));
 
-        let marked = build::from_closure(move |w| {
-            if let Some(offset) = rd.marked_date_offset {
-                let marker = build::single("line").with(attrs!(
-                    ("class", "marker"),
-                    ("x1", offset),
-                    ("y1", rd.gutter.top - 5.0),
-                    ("x2", offset),
-                    (
-                        "y2",
-                        rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height) + 5.0
-                    )
-                ));
+        // let tasks = build::elem("text")
+        //     .with(attrs!(
+        //         ("class", "heading task-heading"),
+        //         ("x", rd.gutter.left + rd.row_gutter.left),
+        //         // TODO(john): Use more appropriate row height value here?
+        //         (
+        //             "y",
+        //             rd.gutter.top - rd.row_gutter.bottom - rd.row_height / 2.0
+        //         )
+        //     ))
+        //     .append("Tasks");
 
-                w.render(marker)
-            } else {
-                w.render(build::single("g"))
-            }
-        });
+        // let title = build::elem("text")
+        //     .with(attrs!(
+        //         ("class", "title"),
+        //         ("x", rd.gutter.left),
+        //         // TODO(john): Use more appropriate row height value here?
+        //         ("y", 25.0)
+        //     ))
+        //     .append(format_move!("{}", &rd.title));
 
-        let resources =
-            build::elem("g").append(build::from_iter((0..rd.resources.len()).map(|i| {
-                build::from_closure(move |w| {
-                    if add_resource_table {
-                        let y = rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height);
-                        let block_width = rd.resource_height - rd.resource_gutter.height();
-                        let text = build::elem("text")
-                            .with(attrs!(
-                                ("class", "resource"),
-                                (
-                                    "x",
-                                    rd.resource_gutter.left + ((i + 1) as f32) * 100.0 - 5.0
-                                ),
-                                ("y", y + rd.resource_height / 2.0)
-                            ))
-                            .append(format_move!("{}", &rd.resources[i]));
-                        let block = build::single("rect").with(attrs!(
-                            ("class", format_move!("resource-{}-closed", i)),
-                            (
-                                "x",
-                                rd.resource_gutter.left + ((i + 1) as f32) * 100.0 + 5.0
-                            ),
-                            ("y", y + rd.resource_gutter.top),
-                            ("rx", rd.rect_corner_radius),
-                            ("ry", rd.rect_corner_radius),
-                            ("width", block_width),
-                            ("height", block_width)
-                        ));
-                        w.render(block.append(text))
-                    } else {
-                        w.render(build::single("g"))
-                    }
-                })
-            })));
+        // let marked = build::from_closure(move |w| {
+        //     if let Some(offset) = rd.marked_date_offset {
+        //         let marker = build::single("line").with(attrs!(
+        //             ("class", "marker"),
+        //             ("x1", offset),
+        //             ("y1", rd.gutter.top - 5.0),
+        //             ("x2", offset),
+        //             (
+        //                 "y2",
+        //                 rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height) + 5.0
+        //             )
+        //         ));
 
-        let all = svg
-            .append(style)
-            .append(title)
-            .append(columns)
-            .append(tasks)
-            .append(rows)
-            .append(marked)
-            .append(resources);
+        //         w.render(marker)
+        //     } else {
+        //         w.render(build::single("g"))
+        //     }
+        // });
+
+        // let resources =
+        //     build::elem("g").append(build::from_iter((0..rd.resources.len()).map(|i| {
+        //         build::from_closure(move |w| {
+        //             if add_resource_table {
+        //                 let y = rd.gutter.top + ((rd.rows.len() as f32) * rd.row_height);
+        //                 let block_width = rd.resource_height - rd.resource_gutter.height();
+        //                 let text = build::elem("text")
+        //                     .with(attrs!(
+        //                         ("class", "resource"),
+        //                         (
+        //                             "x",
+        //                             rd.resource_gutter.left + ((i + 1) as f32) * 100.0 - 5.0
+        //                         ),
+        //                         ("y", y + rd.resource_height / 2.0)
+        //                     ))
+        //                     .append(format_move!("{}", &rd.resources[i]));
+        //                 let block = build::single("rect").with(attrs!(
+        //                     ("class", format_move!("resource-{}-closed", i)),
+        //                     (
+        //                         "x",
+        //                         rd.resource_gutter.left + ((i + 1) as f32) * 100.0 + 5.0
+        //                     ),
+        //                     ("y", y + rd.resource_gutter.top),
+        //                     ("rx", rd.rect_corner_radius),
+        //                     ("ry", rd.rect_corner_radius),
+        //                     ("width", block_width),
+        //                     ("height", block_width)
+        //                 ));
+        //                 w.render(block.append(text))
+        //             } else {
+        //                 w.render(build::single("g"))
+        //             }
+        //         })
+        //     })));
+
+        // let all = svg
+        //     .append(style)
+        //     .append(title)
+        //     .append(columns)
+        //     .append(tasks)
+        //     .append(rows)
+        //     .append(marked)
+        //     .append(resources);
 
         let mut output = String::new();
-        hypermelon::render(all, &mut output)?;
+        // hypermelon::render(all, &mut output)?;
 
         Ok(output)
     }
