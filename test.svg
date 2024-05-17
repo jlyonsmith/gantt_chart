@@ -1,0 +1,19 @@
+<svg viewbox="0 0 390 420" xmlns="http://www.w3.org/2000/svg">
+<style>
+.outer-lines{stroke-width:3;stroke:#aaaaaa;}
+.inner-lines{stroke-width:2;stroke:#dddddd;}
+.item{font-family:Arial;font-size:12pt;dominant-baseline:middle;}
+.resource{font-family:Arial;font-size:12pt;text-anchor:end;dominant-baseline:middle;}
+.title{font-family:Arial;font-size:18pt;}
+.heading{font-family:Arial;font-size:16pt;dominant-baseline:middle;text-anchor:middle;}
+.task-heading{dominant-baseline:middle;text-anchor:start;}
+.milestone{fill:black;stroke-width:1;stroke:black;}
+.marker{stroke-width:2;stroke:#888888;stroke-dasharray:7;}
+.resource-0-closed{fill:#4b4080;stroke-width:1;stroke:#4b4080;}
+.resource-0-open{fill:none;stroke-width:2;stroke:#4b4080;}
+.resource-1-closed{fill:#478040;stroke-width:1;stroke:#478040;}
+.resource-1-open{fill:none;stroke-width:2;stroke:#478040;}
+.resource-2-closed{fill:#804059;stroke-width:1;stroke:#804059;}
+.resource-2-open{fill:none;stroke-width:2;stroke:#804059;}
+</style>
+</svg>
