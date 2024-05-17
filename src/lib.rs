@@ -459,7 +459,7 @@ impl<'a> GanttChartTool<'a> {
         let height = rd.gutter.top
             + (rd.rows.len() as f32 * rd.row_height)
             + (if add_resource_table {
-                rd.resource_gutter.height() + rd.row_height
+                rd.resource_gutter.height() + rd.resource_height
             } else {
                 0.0
             })
