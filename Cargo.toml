@@ -15,7 +15,6 @@ chrono = { version = "0.4.22", features = ["serde"] }
 clap = { version = "4.0.7", features = ["derive"] }
 colored = "2.0.0"
 easy-error = "1.0.0"
-hypermelon = "0.4.0"
 json5 = "0.4.1"
 rand = "0.8.5"
 serde = { version = "1.0.145", features = ["derive"] }

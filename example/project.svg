@@ -1,109 +1,113 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="470" viewBox="0 0 540 470" style="background-color: white;">
-	<style>
-.outer-lines{stroke-width:3;stroke:#aaaaaa;}
-.inner-lines{stroke-width:2;stroke:#dddddd;}
-.item{font-family:Arial;font-size:12pt;dominant-baseline:middle;}
-.resource{font-family:Arial;font-size:12pt;text-anchor:end;dominant-baseline:middle;}
-.title{font-family:Arial;font-size:18pt;}
-.heading{font-family:Arial;font-size:16pt;dominant-baseline:middle;text-anchor:middle;}
-.task-heading{dominant-baseline:middle;text-anchor:start;}
-.milestone{fill:black;stroke-width:1;stroke:black;}
-.marker{stroke-width:2;stroke:#888888;stroke-dasharray:7;}
-.resource-0-closed{fill:#408040;stroke-width:1;stroke:#408040;}
-.resource-0-open{fill:none;stroke-width:2;stroke:#408040;}
-.resource-1-closed{fill:#804051;stroke-width:1;stroke:#804051;}
-.resource-1-open{fill:none;stroke-width:2;stroke:#804051;}
-.resource-2-closed{fill:#406480;stroke-width:1;stroke:#406480;}
-.resource-2-open{fill:none;stroke-width:2;stroke:#406480;}
-	</style>
-	<text class="title" x="10" y="25">
-Plant a Garden
-	</text>
-	<g>
-		<line class="inner-lines" x1="230" y1="80" x2="230" y2="410"/>
-		<text class="heading" x="305" y="60">
-Jul
-		</text>
-		<line class="inner-lines" x1="380" y1="80" x2="380" y2="410"/>
-		<text class="heading" x="455" y="60">
-Aug
-		</text>
-		<line class="inner-lines" x1="530" y1="80" x2="530" y2="410"/>
-	</g>
-	<text class="heading task-heading" x="15" y="60">
-Tasks
-	</text>
-	<g>
-		<line class="outer-lines" x1="10" y1="80" x2="530" y2="80"/>
-		<text class="item" x="15" y="100">
-Design the layout
-		</text>
-		<rect class="resource-0-closed" x="297.74194" y="85" rx="3" ry="3" width="14.516129" height="20"/>
-		<line class="inner-lines" x1="10" y1="110" x2="530" y2="110"/>
-		<text class="item" x="15" y="130">
-Review with group
-		</text>
-		<rect class="resource-0-closed" x="312.25806" y="115" rx="3" ry="3" width="4.8387094" height="20"/>
-		<line class="inner-lines" x1="10" y1="140" x2="530" y2="140"/>
-		<text class="item" x="15" y="160">
-Make adjustments
-		</text>
-		<rect class="resource-0-closed" x="317.09677" y="145" rx="3" ry="3" width="9.677419" height="20"/>
-		<line class="inner-lines" x1="10" y1="170" x2="530" y2="170"/>
-		<text class="item" x="15" y="190">
-Final review
-		</text>
-		<rect class="resource-0-closed" x="326.7742" y="175" rx="3" ry="3" width="4.8387094" height="20"/>
-		<line class="inner-lines" x1="10" y1="200" x2="530" y2="200"/>
-		<text class="item" x="15" y="220">
-Select plants
-		</text>
-		<rect class="resource-1-closed" x="346.12903" y="205" rx="3" ry="3" width="33.870968" height="20"/>
-		<line class="inner-lines" x1="10" y1="230" x2="530" y2="230"/>
-		<text class="item" x="15" y="250">
-Deliver plants
-		</text>
-		<rect class="resource-1-closed" x="418.70966" y="235" rx="3" ry="3" width="4.8387094" height="20"/>
-		<line class="inner-lines" x1="10" y1="260" x2="530" y2="260"/>
-		<text class="item" x="15" y="280">
-Site preparation
-		</text>
-		<rect class="resource-2-open" x="423.5484" y="265" rx="3" ry="3" width="24.193548" height="20"/>
-		<line class="inner-lines" x1="10" y1="290" x2="530" y2="290"/>
-		<text class="item" x="15" y="310">
-Plant trees
-		</text>
-		<rect class="resource-2-open" x="447.74194" y="295" rx="3" ry="3" width="14.516129" height="20"/>
-		<line class="inner-lines" x1="10" y1="320" x2="530" y2="320"/>
-		<text class="item" x="15" y="340">
-Plant perennials
-		</text>
-		<rect class="resource-2-open" x="462.25806" y="325" rx="3" ry="3" width="19.354837" height="20"/>
-		<line class="inner-lines" x1="10" y1="350" x2="530" y2="350"/>
-		<text class="item" x="15" y="370">
-Plant annuals
-		</text>
-		<rect class="resource-2-open" x="481.6129" y="355" rx="3" ry="3" width="9.677419" height="20"/>
-		<line class="inner-lines" x1="10" y1="380" x2="530" y2="380"/>
-		<text class="item" x="15" y="400">
-Garden planted
-		</text>
-		<path class="milestone" d=" M 481.2903 395 l 10 -10 l 10 10 l -10 10 l -10 -10"/>
-		<line class="outer-lines" x1="10" y1="410" x2="530" y2="410"/>
-	</g>
-	<line class="marker" x1="447.74194" y1="75" x2="447.74194" y2="415"/>
-	<g>
-		<rect class="resource-0-closed" x="115" y="420" rx="3" ry="3" width="20" height="20"/>
-		<text class="resource" x="105" y="430">
-Jane
-		</text>
-		<rect class="resource-1-closed" x="215" y="420" rx="3" ry="3" width="20" height="20"/>
-		<text class="resource" x="205" y="430">
-Mary
-		</text>
-		<rect class="resource-2-closed" x="315" y="420" rx="3" ry="3" width="20" height="20"/>
-		<text class="resource" x="305" y="430">
-Anne
-		</text>
-	</g>
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="470" viewBox="0 0 540 470"
+  style="background-color: white;">
+  <style>
+    .outer-lines{stroke-width:3;stroke:#aaaaaa;}
+    .inner-lines{stroke-width:2;stroke:#dddddd;}
+    .item{font-family:Arial;font-size:12pt;dominant-baseline:middle;}
+    .resource{font-family:Arial;font-size:12pt;text-anchor:end;dominant-baseline:middle;}
+    .title{font-family:Arial;font-size:18pt;}
+    .heading{font-family:Arial;font-size:16pt;dominant-baseline:middle;text-anchor:middle;}
+    .task-heading{dominant-baseline:middle;text-anchor:start;}
+    .milestone{fill:black;stroke-width:1;stroke:black;}
+    .marker{stroke-width:2;stroke:#888888;stroke-dasharray:7;}
+    .resource-0-closed{fill:#408040;stroke-width:1;stroke:#408040;}
+    .resource-0-open{fill:none;stroke-width:2;stroke:#408040;}
+    .resource-1-closed{fill:#804051;stroke-width:1;stroke:#804051;}
+    .resource-1-open{fill:none;stroke-width:2;stroke:#804051;}
+    .resource-2-closed{fill:#406480;stroke-width:1;stroke:#406480;}
+    .resource-2-open{fill:none;stroke-width:2;stroke:#406480;}
+  </style>
+  <text class="title" x="10" y="25">
+    Plant a Garden
+  </text>
+  <g>
+    <line class="inner-lines" x1="230" y1="80" x2="230" y2="410" />
+    <text class="heading" x="305" y="60">
+      Jul
+    </text>
+    <line class="inner-lines" x1="380" y1="80" x2="380" y2="410" />
+    <text class="heading" x="455" y="60">
+      Aug
+    </text>
+    <line class="inner-lines" x1="530" y1="80" x2="530" y2="410" />
+  </g>
+  <text class="heading task-heading" x="15" y="60">
+    Tasks
+  </text>
+  <g>
+    <line class="outer-lines" x1="10" y1="80" x2="530" y2="80" />
+    <text class="item" x="15" y="100">
+      Design the layout
+    </text>
+    <rect class="resource-0-closed" x="297.74194" y="85" rx="3" ry="3" width="14.516129" height="20" />
+    <line class="inner-lines" x1="10" y1="110" x2="530" y2="110" />
+    <text class="item" x="15" y="130">
+      Review with group
+    </text>
+    <rect class="resource-0-closed" x="312.25806" y="115" rx="3" ry="3" width="4.8387094"
+      height="20" />
+    <line class="inner-lines" x1="10" y1="140" x2="530" y2="140" />
+    <text class="item" x="15" y="160">
+      Make adjustments
+    </text>
+    <rect class="resource-0-closed" x="317.09677" y="145" rx="3" ry="3" width="9.677419" height="20" />
+    <line class="inner-lines" x1="10" y1="170" x2="530" y2="170" />
+    <text class="item" x="15" y="190">
+      Final review
+    </text>
+    <rect class="resource-0-closed" x="326.7742" y="175" rx="3" ry="3" width="4.8387094" height="20" />
+    <line class="inner-lines" x1="10" y1="200" x2="530" y2="200" />
+    <text class="item" x="15" y="220">
+      Select plants
+    </text>
+    <rect class="resource-1-closed" x="346.12903" y="205" rx="3" ry="3" width="33.870968"
+      height="20" />
+    <line class="inner-lines" x1="10" y1="230" x2="530" y2="230" />
+    <text class="item" x="15" y="250">
+      Deliver plants
+    </text>
+    <rect class="resource-1-closed" x="418.70966" y="235" rx="3" ry="3" width="4.8387094"
+      height="20" />
+    <line class="inner-lines" x1="10" y1="260" x2="530" y2="260" />
+    <text class="item" x="15" y="280">
+      Site preparation
+    </text>
+    <rect class="resource-2-open" x="423.5484" y="265" rx="3" ry="3" width="24.193548" height="20" />
+    <line class="inner-lines" x1="10" y1="290" x2="530" y2="290" />
+    <text class="item" x="15" y="310">
+      Plant trees
+    </text>
+    <rect class="resource-2-open" x="447.74194" y="295" rx="3" ry="3" width="14.516129" height="20" />
+    <line class="inner-lines" x1="10" y1="320" x2="530" y2="320" />
+    <text class="item" x="15" y="340">
+      Plant perennials
+    </text>
+    <rect class="resource-2-open" x="462.25806" y="325" rx="3" ry="3" width="19.354837" height="20" />
+    <line class="inner-lines" x1="10" y1="350" x2="530" y2="350" />
+    <text class="item" x="15" y="370">
+      Plant annuals
+    </text>
+    <rect class="resource-2-open" x="481.6129" y="355" rx="3" ry="3" width="9.677419" height="20" />
+    <line class="inner-lines" x1="10" y1="380" x2="530" y2="380" />
+    <text class="item" x="15" y="400">
+      Garden planted
+    </text>
+    <path class="milestone" d=" M 481.2903 395 l 10 -10 l 10 10 l -10 10 l -10 -10" />
+    <line class="outer-lines" x1="10" y1="410" x2="530" y2="410" />
+  </g>
+  <line class="marker" x1="447.74194" y1="75" x2="447.74194" y2="415" />
+  <g>
+    <rect class="resource-0-closed" x="115" y="420" rx="3" ry="3" width="20" height="20" />
+    <text class="resource" x="105" y="430">
+      Jane
+    </text>
+    <rect class="resource-1-closed" x="215" y="420" rx="3" ry="3" width="20" height="20" />
+    <text class="resource" x="205" y="430">
+      Mary
+    </text>
+    <rect class="resource-2-closed" x="315" y="420" rx="3" ry="3" width="20" height="20" />
+    <text class="resource" x="305" y="430">
+      Anne
+    </text>
+  </g>
 </svg>

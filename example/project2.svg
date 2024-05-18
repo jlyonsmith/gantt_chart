@@ -1,0 +1,109 @@
+<svg height="480" style="background-color: white;" viewbox="0 0 470 480" width="470" xmlns="http://www.w3.org/2000/svg">
+<style>
+.outer-lines{stroke-width:3;stroke:#aaaaaa;}
+.inner-lines{stroke-width:2;stroke:#dddddd;}
+.item{font-family:Arial;font-size:12pt;dominant-baseline:middle;}
+.resource{font-family:Arial;font-size:12pt;text-anchor:end;dominant-baseline:middle;}
+.title{font-family:Arial;font-size:18pt;}
+.heading{font-family:Arial;font-size:16pt;dominant-baseline:middle;text-anchor:middle;}
+.task-heading{dominant-baseline:middle;text-anchor:start;}
+.milestone{fill:black;stroke-width:1;stroke:black;}
+.marker{stroke-width:2;stroke:#888888;stroke-dasharray:7;}
+.resource-0-closed{fill:#5e8040;stroke-width:1;stroke:#5e8040;}
+.resource-0-open{fill:none;stroke-width:2;stroke:#5e8040;}
+.resource-1-closed{fill:#804071;stroke-width:1;stroke:#804071;}
+.resource-1-open{fill:none;stroke-width:2;stroke:#804071;}
+.resource-2-closed{fill:#40807b;stroke-width:1;stroke:#40807b;}
+.resource-2-open{fill:none;stroke-width:2;stroke:#40807b;}
+</style>
+<text class="title" x="10" y="25">
+Plant a Garden
+</text>
+<g>
+<line class="inner-lines" x1="220" x2="220" y1="80" y2="410"/>
+<text class="heading" x="280" y="60">
+Jul
+</text>
+<line class="inner-lines" x1="340" x2="340" y1="80" y2="410"/>
+<text class="heading" x="400" y="60">
+Aug
+</text>
+<line class="inner-lines" x1="460" x2="460" y1="80" y2="410"/>
+</g>
+<text class="heading task-heading" x="15" y="60">
+Tasks
+</text>
+<g>
+<line class="outer-lines" x1="10" x2="460" y1="80" y2="80"/>
+<text class="item" x="15" y="100">
+Design the layout
+</text>
+<rect class="resource-0-closed" height="20" rx="3" ry="3" width="11.612903" x="274.19354" y="85"/>
+<line class="inner-lines" x1="10" x2="460" y1="110" y2="110"/>
+<text class="item" x="15" y="130">
+Review with group
+</text>
+<rect class="resource-0-closed" height="20" rx="3" ry="3" width="3.8709676" x="285.80646" y="115"/>
+<line class="inner-lines" x1="10" x2="460" y1="140" y2="140"/>
+<text class="item" x="15" y="160">
+Make adjustments
+</text>
+<rect class="resource-0-closed" height="20" rx="3" ry="3" width="7.7419353" x="289.67743" y="145"/>
+<line class="inner-lines" x1="10" x2="460" y1="170" y2="170"/>
+<text class="item" x="15" y="190">
+Final review
+</text>
+<rect class="resource-0-closed" height="20" rx="3" ry="3" width="3.8709676" x="297.41934" y="175"/>
+<line class="inner-lines" x1="10" x2="460" y1="200" y2="200"/>
+<text class="item" x="15" y="220">
+Select plants
+</text>
+<rect class="resource-1-closed" height="20" rx="3" ry="3" width="27.096773" x="312.90323" y="205"/>
+<line class="inner-lines" x1="10" x2="460" y1="230" y2="230"/>
+<text class="item" x="15" y="250">
+Deliver plants
+</text>
+<rect class="resource-1-closed" height="20" rx="3" ry="3" width="3.8709676" x="370.96774" y="235"/>
+<line class="inner-lines" x1="10" x2="460" y1="260" y2="260"/>
+<text class="item" x="15" y="280">
+Site preparation
+</text>
+<rect class="resource-2-open" height="20" rx="3" ry="3" width="19.354837" x="374.83868" y="265"/>
+<line class="inner-lines" x1="10" x2="460" y1="290" y2="290"/>
+<text class="item" x="15" y="310">
+Plant trees
+</text>
+<rect class="resource-2-open" height="20" rx="3" ry="3" width="11.612903" x="394.19354" y="295"/>
+<line class="inner-lines" x1="10" x2="460" y1="320" y2="320"/>
+<text class="item" x="15" y="340">
+Plant perennials
+</text>
+<rect class="resource-2-open" height="20" rx="3" ry="3" width="15.4838705" x="405.80646" y="325"/>
+<line class="inner-lines" x1="10" x2="460" y1="350" y2="350"/>
+<text class="item" x="15" y="370">
+Plant annuals
+</text>
+<rect class="resource-2-open" height="20" rx="3" ry="3" width="7.7419353" x="421.2903" y="355"/>
+<line class="inner-lines" x1="10" x2="460" y1="380" y2="380"/>
+<text class="item" x="15" y="400">
+Garden planted
+</text>
+<path class="milestone" d="M419.03226,395 l10,-10 l10,10 l-10,10 l-10,-10"/>
+<line class="outer-lines" x1="10" x2="460" y1="410" y2="410"/>
+</g>
+<line class="marker" x1="394.19354" x2="394.19354" y1="75" y2="415"/>
+<g>
+<text class="resource" x="105" y="430">
+Jane
+</text>
+<rect class="resource-0-closed" height="20" rx="3" ry="3" width="20" x="115" y="420"/>
+<text class="resource" x="205" y="430">
+Mary
+</text>
+<rect class="resource-1-closed" height="20" rx="3" ry="3" width="20" x="215" y="420"/>
+<text class="resource" x="305" y="430">
+Anne
+</text>
+<rect class="resource-2-closed" height="20" rx="3" ry="3" width="20" x="315" y="420"/>
+</g>
+</svg>

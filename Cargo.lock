@@ -168,7 +168,6 @@ dependencies = [
  "clap",
  "colored",
  "easy-error",
- "hypermelon",
  "json5",
  "rand",
  "serde",
@@ -210,12 +209,6 @@ checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "hypermelon"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17586512ea784af78de466c46f11fe96b53d67e0393cb7504cac1b7d2121200e"
 
 [[package]]
 name = "iana-time-zone"
